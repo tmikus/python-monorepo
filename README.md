@@ -3,6 +3,12 @@
 - [Direnv](https://direnv.net/)
 - [Python 3.x](https://www.python.org/downloads/)
 
+**Python packages (for building the .whl files)**
+- [build (pypi)](https://pypi.org/project/build/)
+- [setuptools (pypi)](https://pypi.org/project/setuptools/)
+- [setuptools-scm (pypi)](https://pypi.org/project/setuptools-scm/)
+- [wheel (pypi)](https://pypi.org/project/wheel/)
+
 ## Packages
 
 Each package should be structured like this:
@@ -73,4 +79,6 @@ pytest >= 7.2.1
 -e api      # Corresponds to the api folder
 -e utils    # Corresponds to the utils folder
 ```
+
+### First package: utils
 

@@ -1,0 +1,14 @@
+# List all the packages that are part of the project
+-e api
+-e utils
+
+# List all external dependencies
+# e.g.
+# notebook
+# numpy
+
+# Build dependencies that are needed to build this project
+build
+setuptools
+setuptools-scm
+wheel
