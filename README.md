@@ -2,7 +2,7 @@
 
 This blog posts describes my take on how to create a Python monorepo using native Python tools and [direnv](https://direnv.net/).
 
-The project created this way is much easier to use than using dedicated tools like [Poetry](https://python-poetry.org/) or [Bazel](https://bazel.build/) as it doesn't require any esoteric knowledge on how to best use these tools.
+The project created this way is much easier to use than using dedicated tools like [Poetry](https://python-poetry.org/) or [Bazel](https://bazel.build/) as it doesn't require any esoteric knowledge on how best to use these tools.
 
 ## Prerequisites
 
@@ -181,6 +181,34 @@ To speed up that build you can run the command without the virtual environment b
 ```shell
 python -m build --no-isolation
 ```
+
+## Building a Docker image
+
+As you might have noticed, the `build` command creates a `.whl` file. This file can be used to install the package in a Docker image. In a larger monorepo, you might think that you have to install every package in that is produced by your build. However, this is not the case. The `pip install` command can be configured to only install your main package, and to find all required dependencies specified in your `setup.cfg` file from that package. Simply make sure that you copy all the wheels to your Docker image. Once you install your main wheel with all its dependencies, you can remove all the other wheels to save space.
+
+For example, given the project with the packages `utils` and `api`, to build a Docker image for the `api` package, you can do the following:
+
+```dockerfile
+FROM python:latest
+
+# Display python version
+RUN python --version
+
+# Copy wheel files to /app
+WORKDIR /app
+COPY build/*.whl .
+
+# Install packages. This will ensure that all dependencies of wheels are installed
+RUN pip install --find-links /app/*.whl api-*.whl
+
+# Remove all wheels to save space
+RUN rm -rf *.whl
+
+# Run the API
+CMD ["python", "-m", "api"]
+```
+
+Notice the `--find-links` flag. This flag tells `pip` to look for dependencies in specified paths. In this case, we're telling `pip` to look for dependencies to look for dependencies in all the `.whl` files in the `/app` directory.
 
 ## IntelliJ IDE configuration
 

@@ -1,5 +1,6 @@
 .direnv
 .idea
 
-dist
+/build/
+dist/
 *.egg-info
