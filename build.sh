@@ -3,8 +3,8 @@
 function build_all_packages() {
   echo "Building all packages..."
   # for each package from find_all_packages run build_package
-  for package in $(find_all_packages); do
-    build_package "$package"
+  for package in $(find_all_packages || exit); do
+    build_package "$package" || exit
   done
 }
 
@@ -22,13 +22,13 @@ function build_package() {
 
 function collect_wheels() {
   echo "Collecting wheels..."
-  rm -rf build
-  mkdir -p build
-  find . -name "*.whl" -not -path "./build/*" -exec cp {} build \;
+  rm -rf build || exit
+  mkdir -p build || exit
+  (find . -name "*.whl" -not -path "./build/*" -exec cp {} build \;) || exit
 }
 
 function find_all_packages() {
-  find . -name "pyproject.toml" -not -path "./build/*" -exec dirname {} \;
+  (find . -name "pyproject.toml" -not -path "./build/*" -exec dirname {} \;) || exit
 }
 
 function run_docker() {
