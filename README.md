@@ -246,4 +246,4 @@ To configure the IDE to use the Python virtual environment created by `direnv` y
 
 ## Visual Studio Code configuration
 
-From experience, there's no need for any custom configuration in VS Code. This project setup should simply work out of the box.
+From my experience, there's no need for any custom configuration in VS Code. This project should simply work out of the box.
