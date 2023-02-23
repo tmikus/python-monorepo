@@ -1,8 +1,19 @@
 ## Introduction
 
-This blog posts describes my take on how to create a Python monorepo using native Python tools and [direnv](https://direnv.net/).
+This blog posts describes my take on how to create a Python monorepo using [direnv](https://direnv.net/) and standard Python tools like [build](https://pypi.org/project/build/), [setuptools](https://pypi.org/project/setuptools/) and [wheel](https://pypi.org/project/wheel/).
 
-The project created this way is much easier to use than using dedicated tools like [Poetry](https://python-poetry.org/) or [Bazel](https://bazel.build/) as it doesn't require any esoteric knowledge on how best to use these tools.
+The project created this way is much more beginner-friendly than using tools like [Poetry](https://python-poetry.org/) or [Bazel](https://bazel.build/) as it doesn't require any esoteric knowledge on how best to use these tools.
+
+In my previous role I worked on a project using [Bazel](https://bazel.build/) and I found it to be a very powerful tool, but it was also very hard to use for new developers and applied scientists. The IDE support was also quite poor, which meant that developers weren't getting the best experience possible.
+
+This approach attempts to solve the following issues:
+- It should be easy to use for all developers, regardless of their experience with Python
+- It should allow a similar level of environment isolation as Bazel and NPM (remember `node_modules` folder?)
+- It should be playing nicely with ANY IDE, not just the ones that have a plugin for Bazel
+- It should be easy to build a production-ready Docker image from the monorepo
+- It should allow publishing the packages to a private or public PyPI server
+
+Please feel free to comment on this post if you have any suggestions on how to improve this approach.
 
 ## Prerequisites
 
@@ -23,7 +34,8 @@ In our case we will use it to automatically create and set the Python virtual en
 
 ## Project structure
 
-Each package should be structured like this:
+The project structure I've settled on is as follows:
+
 ```text
 python-monorepo               # The root of the project (the name of the folder doesn't matter)
 |-- .envrc                    # Contains a configuration for direnv
@@ -49,7 +61,10 @@ python-monorepo               # The root of the project (the name of the folder 
 
 ## Creating .envrc
 
+The `.envrc` file is responsible for creating the Python virtual environment and setting it as the default Python interpreter for the project. This virtual environment will protect your global installation of Python from any changes you make to the project. It will also allow you to use different versions of Python for different projects.
+
 In your project create a `.envrc` file with the following content:
+
 ```text
 layout python3
 ```
@@ -72,13 +87,13 @@ Once you do this you should be greeted with the following log:
 ![direnv: loading python-monorepo/.envrc
 direnv: export +VIRTUAL_ENV ~PATH](assets/posts/2023-02-21-python-monorepo/after_direnv_allow.png)
 
+The warning about `direnv` not being allowed to use the `.envrc` might reappear if you make any changes to the `.envrc` file. To fix this simply run the `direnv allow .` command again.
 
 ## Creating requirements.txt
 
-This file should list all the dependencies required by your project to run locally, as well as a list of all the packages
-belonging to the monorepo.
+This file should list all the dependencies required by your project to run locally, as well as a list of all the packages belonging to the monorepo. The `requirements.txt` file will only be used for local development and will not be used in production, because production dependencies will be specified in the `setup.cfg` file for each package.
 
-The packages that belong to the monorepo should be installed as editable dependencies:
+The packages that belong to the monorepo should be installed as editable dependencies (prefixed with `-e`). This will allow you to make changes to the packages and see the changes immediately in the project that uses them.
 
 ```text
 # Monorepo packages
@@ -86,12 +101,12 @@ The packages that belong to the monorepo should be installed as editable depende
 -e utils    # Corresponds to the utils folder
 
 # Dependencies
-# returns >= 0.19.0
+returns >= 0.19.0  # An example dependency
 
 # Dev Dependencies
-# pytest >= 7.2.1
+pytest >= 7.2.1    # An example dev dependency
 
-# Build dependencies that are needed to build this project
+# Build-time dependencies that are needed to build this project
 build
 setuptools
 setuptools-scm
@@ -102,7 +117,7 @@ The `requirements.txt` file won't be used in production as the runtime dependenc
 
 ## Creating packages
 
-To create a new package, simply create a new folder in the root of the project with the name of the package and the following directory structure:
+To create a new package, simply create a new folder in the root of the project with the name of the package and the following directory structure. The structure below is based on the [official Python packaging guide](https://packaging.python.org/tutorials/packaging-projects/) and the official comparison between [src layout vs flat layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/).
 
 ```text
 myPackage
@@ -147,7 +162,8 @@ install_requires =
 where = src
 
 [options.package_data]
-# * = **/*.json, **/*.txt # Uncomment if your package comes with any JSON or TXT files you'd like to bundle
+# * = **/*.json, **/*.txt     # Uncomment if your package comes with any JSON or TXT files you'd like to bundle
+# You can list your package data files here.
 ```
 
 Notice the `install_requires` section. This is where you specify the runtime dependencies of the package. The dependencies should be listed in the same format as in the `requirements.txt` file.
@@ -172,7 +188,7 @@ To build a specific package, navigate to the root directory of the package (the 
 python -m build
 ```
 
-By default, the build command will create a `dist` folder in the root of the package and will place the `.whl` file there.
+The build command will create a `dist` folder in the root of the package and will place the `.whl` file there.
 
 This command also takes a while to complete as it will create a new isolated virtual environment, and build the package in that isolated environment.
 
@@ -184,7 +200,9 @@ python -m build --no-isolation
 
 ## Building a Docker image
 
-As you might have noticed, the `build` command creates a `.whl` file. This file can be used to install the package in a Docker image. In a larger monorepo, you might think that you have to install every package in that is produced by your build. However, this is not the case. The `pip install` command can be configured to only install your main package, and to find all required dependencies specified in your `setup.cfg` file from that package. Simply make sure that you copy all the wheels to your Docker image. Once you install your main wheel with all its dependencies, you can remove all the other wheels to save space.
+As you might have noticed, the `build` command creates a `.whl` file. This file can be used to install the package in a Docker image. In a larger monorepo, you might think that you might have to install every package in that was produced by your build. However, this is not the case.
+
+The `pip install` command can be configured to only install your main package, and to find all required dependencies specified in your `setup.cfg` file from that package. Simply make sure that you copy **all** the wheels to your Docker image. Once you install your main wheel with its dependencies, you can remove all wheels to save space.
 
 For example, given the project with the packages `utils` and `api`, to build a Docker image for the `api` package, you can do the following:
 
@@ -203,6 +221,9 @@ RUN pip install --find-links /app/*.whl api-*.whl
 
 # Remove all wheels to save space
 RUN rm -rf *.whl
+
+# Change the user to a non-root user
+USER 1234
 
 # Run the API
 CMD ["python", "-m", "api"]
