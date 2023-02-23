@@ -73,7 +73,7 @@ This will tell `direnv` to create a Python virtual environment for the project a
 
 By default, `direnv` is forbidden from executing the `.envrc` files, so when you navigate to the root of the project in terminal you'll be greeted with the following error:
 
-![direnv: error python-monorepo/.envrc is blocked. Run `direnv allow` to approve its content](/assets/posts/2023-02-21-python-monorepo/before_direnv_allow.png)
+![direnv: error python-monorepo/.envrc is blocked. Run `direnv allow` to approve its content](images/before_direnv_allow.png)
 
 The first time you use the repository on your device you'll have to allow `direnv` to use that `.envrc` file.
 To do that simply run the following command in the root of your project:
@@ -85,7 +85,7 @@ direnv allow .
 Once you do this you should be greeted with the following log:
 
 ![direnv: loading python-monorepo/.envrc
-direnv: export +VIRTUAL_ENV ~PATH](assets/posts/2023-02-21-python-monorepo/after_direnv_allow.png)
+direnv: export +VIRTUAL_ENV ~PATH](images/after_direnv_allow.png)
 
 The warning about `direnv` not being allowed to use the `.envrc` might reappear if you make any changes to the `.envrc` file. To fix this simply run the `direnv allow .` command again.
 
