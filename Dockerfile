@@ -13,5 +13,8 @@ RUN pip install --find-links /app/*.whl api-*.whl
 # Remove all wheels to save space
 RUN rm -rf *.whl
 
+# Change the user to a non-root user
+USER 1234
+
 # Run the API
 CMD ["python", "-m", "api"]
